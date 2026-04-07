@@ -31,9 +31,14 @@ async def createFilm(film : Film):
 
 @app.get("/film")
 async def getFilms(page = 1, per_page = 20, genre_id = None):
+    per_page=int(per_page)
+    page=int(page)
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT * FROM Film ORDER BY {genre_id} LIMIT {per_page} OFFSET {(page-1)*per_page}")
+        if genre_id == None:
+            cursor.execute(f"SELECT * FROM Film ORDER BY Genre_ID LIMIT {per_page} OFFSET {(page-1)*per_page}")
+        else:
+            cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = {genre_id} LIMIT {per_page} OFFSET {(page-1)*per_page}")
         res = cursor.fetchall()  
         return res
 
