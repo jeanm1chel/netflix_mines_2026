@@ -24,10 +24,10 @@ class Film(BaseModel):
     genreId: int | None = None
 
 class PaginatedResponse(BaseModel):
-    data : list 
+    data : list
     page : int | None = 1
     per_page : int | None = 20
-    total : int 
+    total : int | None = 1000
 
 class User(BaseModel):
     email : str | None = None
@@ -65,10 +65,13 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
         data = cursor.fetchall()
         cursor = conn.cursor()
         if genre_id == None:
-            cursor.execute(f"SELECT COUNT(*) FROM Film")
+            cursor.execute(f"SELECT * FROM Film")
         else:
-            cursor.execute(f"SELECT COUNT(*) FROM Film WHERE Genre_ID = {genre_id}")
-        res = {"data" : data, "page": page, "per_page":per_page, "total": cursor.fetchone()}
+            cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = {genre_id}")
+        Tout = cursor.fetchall()
+        total = len(Tout)
+        #res = PaginatedResponse(data = data, page = page, per_page = per_page, total = total)
+        res = {"data" : data, "page" : page, "per_page" : per_page, "total" : total}
         return res
 
 
