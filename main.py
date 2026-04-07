@@ -36,10 +36,16 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
     with get_connection() as conn:
         cursor = conn.cursor()
         if genre_id == None:
-            cursor.execute(f"SELECT * FROM Film ORDER BY Genre_ID LIMIT {per_page} OFFSET {(page-1)*per_page}")
+            cursor.execute(f"SELECT * FROM Film ORDER BY Genre_ID,DateSortie  LIMIT {per_page} OFFSET {(page-1)*per_page}")
         else:
-            cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = {genre_id} LIMIT {per_page} OFFSET {(page-1)*per_page}")
-        res = cursor.fetchall()  
+            cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = {genre_id} ORDER BY DateSortie LIMIT {per_page} OFFSET {(page-1)*per_page}")
+        data = cursor.fetchall()
+        cursor = conn.cursor()
+        if genre_id == None:
+            cursor.execute(f"SELECT COUNT(*) FROM Film")
+        else:
+            cursor.execute(f"SELECT COUNT(*) FROM Film WHERE Genre_ID = {genre_id}")
+        res = {"data" : data, "page": page, "per_page":per_page, "total": cursor.fetchone()}
         return res
 
 @app.get("/genres")
