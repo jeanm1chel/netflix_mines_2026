@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from db import get_connection
 import jwt
@@ -8,6 +8,9 @@ app = FastAPI()
 @app.get("/ping")
 def ping():
     return {"message": "pong"}
+
+SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+ALGORITHM = "HS256"
 
 class Film(BaseModel):
     id: int | None = None
@@ -66,13 +69,7 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
         res = {"data" : data, "page": page, "per_page":per_page, "total": cursor.fetchone()}
         return res
 
-# @app.get("/film")
-# async def getFilms(page = 1, per_page = 20, genre_id = None):
-#     with get_connection() as conn:
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT * FROM Film")
-#         res = cursor.fetchall()  
-#         return res
+
 
 @app.get("/genres")
 async def getGenres():
@@ -106,16 +103,30 @@ async def createAccount(user: User):
         cursor.execute(
         f"""
             INSERT INTO Utilisateur (AdresseMail,Pseudo,MotDePasse)  
-            VALUES('{user.email}',{user.pseudo},{user.password}') RETURNING *
+            VALUES('{user.email}','{user.pseudo}','{user.password}') RETURNING *
             """)
         res = cursor.fetchone()
-        
-        key = "smth"
-    return 
+        print(res)
+        token = jwt.encode({"code": user.email,}, SECRET_KEY, algorithm="HS256")
+
+    return TokenResponse(access_token=token, token_type="bearer")
+
 
 @app.post("/auth/login")
-async def login():
-    return
+async def login(user: User):
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT * FROM Utilisateur WHERE AdresseMail = '{user.email}' AND MotDePasse = '{user.password}'"
+        )
+        res = cursor.fetchone()
+
+    if res is None:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
+
+    token = jwt.encode({"sub": user.email}, SECRET_KEY,algorithm="HS256")
+
+    return TokenResponse(access_token=token, token_type="bearer")
 
 @app.post("preferences")
 async def addPref():
