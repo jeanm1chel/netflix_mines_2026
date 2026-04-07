@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from db import get_connection
+import jwt
 
 app = FastAPI()
 
@@ -16,6 +17,23 @@ class Film(BaseModel):
     image: str | None = None
     video: str | None = None
     genreId: int | None = None
+
+class PaginatedResponse(BaseModel):
+    data : list 
+    page : int | None = 1
+    per_page : int | None = 20
+    total : int 
+
+class User(BaseModel):
+    email : str | None = None
+    pseudo : str 
+    password : str 
+    disabled : bool | None = None
+
+class TokenResponse(BaseModel):
+    access_token : str
+    token_type : str | None = "bearer"
+
 
 @app.post("/film")
 async def createFilm(film : Film):
@@ -36,6 +54,14 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
         cursor.execute(f"SELECT * FROM Film ORDER BY {genre_id} LIMIT {per_page} OFFSET {(page-1)*per_page}")
         res = cursor.fetchall()  
         return res
+
+# @app.get("/film")
+# async def getFilms(page = 1, per_page = 20, genre_id = None):
+#     with get_connection() as conn:
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT * FROM Film")
+#         res = cursor.fetchall()  
+#         return res
 
 @app.get("/genres")
 async def getGenres():
@@ -59,6 +85,34 @@ async def deleteFilm(id: int):
         cursor = conn.cursor()
         cursor.execute(f"DELETE FROM Film WHERE Id = {id}")
         return {"message": f"Film {id} supprimé"}
+    
+# Authentification
+
+@app.post("/auth/register")
+async def createAccount(user: User):
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+        f"""
+            INSERT INTO Utilisateur (AdresseMail,Pseudo,MotDePasse)  
+            VALUES('{user.email}',{user.pseudo},{user.password}') RETURNING *
+            """)
+        res = cursor.fetchone()
+        
+        key = "smth"
+    return 
+
+@app.post("/auth/login")
+async def login():
+    return
+
+@app.post("preferences")
+async def addPref():
+    return 
+
+@app.delete("preferences/{genre_id}")
+async def delPref(genre_id, Authorization):
+    return 
     
 if __name__ == "__main__":
     import uvicorn
