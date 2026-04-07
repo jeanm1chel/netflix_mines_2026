@@ -53,12 +53,64 @@ La documentation interactive est disponible sur `http://localhost:8000/docs`
 - Concevoir le schéma de la base de données ensemble
 - Implémenter les premiers endpoints CRUD
 
-### Ce qu'on construit
-- Schéma de la BDD : tables `films`, `genres`, `utilisateurs`, `visionnages`
-- `GET /films` — lister tous les films
-- `GET /films/{id}` — détail d'un film
-- `POST /films` — ajouter un film
-- `DELETE /films/{id}` — supprimer un film
+### Routes à implémenter
+
+#### Films
+
+**`GET /films`** — Lister les films (avec pagination)
+
+| Paramètre | Type | Requis | Défaut | Description |
+|-----------|------|--------|--------|-------------|
+| `page` | query (int) | non | `1` | Numéro de page |
+| `per_page` | query (int) | non | `20` | Nombre de films par page |
+| `genre_id` | query (int) | non | — | Filtrer par genre |
+
+Réponse `200` — `PaginatedResponse` :
+```json
+{
+  "data": [FilmResponse],
+  "page": 1,
+  "per_page": 20,
+  "total": 100
+}
+```
+
+---
+
+**`GET /films/{film_id}`** — Détail d'un film
+
+| Paramètre | Type | Requis |
+|-----------|------|--------|
+| `film_id` | path (int) | oui |
+
+Réponse `200` — `FilmResponse` :
+```json
+{
+  "ID": 1,
+  "Nom": "Inception",
+  "Note": 8.8,
+  "DateSortie": 2010,
+  "Image": "https://...",
+  "Video": "https://...",
+  "Genre_ID": 3
+}
+```
+
+> Les champs `Note`, `DateSortie`, `Image`, `Video` et `Genre_ID` sont optionnels (peuvent être `null`). Seuls `ID` et `Nom` sont obligatoires.
+
+#### Genres
+
+**`GET /genres`** — Lister tous les genres
+
+Aucun paramètre.
+
+Réponse `200` — liste de `GenreResponse` :
+```json
+[
+  { "ID": 1, "Type": "Action" },
+  { "ID": 2, "Type": "Comédie" }
+]
+```
 
 ### Notions abordées
 - Structure d'un projet FastAPI (`main.py`, routeurs, schémas Pydantic)
@@ -67,25 +119,106 @@ La documentation interactive est disponible sur `http://localhost:8000/docs`
 
 ---
 
-## 📅 Séance 2 — Visualisation & comptes utilisateurs
+## 📅 Séance 2 — Auth & préférences utilisateur
 
 ### Objectifs
-- Gérer les utilisateurs et l'authentification de base
-- Enregistrer et consulter l'historique de visionnage
-- Explorer des endpoints de statistiques
+- Gérer les utilisateurs et l'authentification par token JWT
+- Implémenter un système de préférences par genre
+- Recommander des films en fonction des préférences
 
-### Ce qu'on construit
-- `POST /utilisateurs` — créer un compte
-- `GET /utilisateurs/{id}/historique` — films vus par un utilisateur
-- `POST /visionnages` — enregistrer un visionnage
-- `GET /films/populaires` — films les plus regardés
-- `GET /genres/{id}/films` — films par genre
+### Routes à implémenter
+
+#### Auth
+
+**`POST /auth/register`** — Créer un compte
+
+Body JSON :
+```json
+{
+  "email": "user@example.com",
+  "pseudo": "johndoe",
+  "password": "s3cret"
+}
+```
+
+Réponse `200` — `TokenResponse` :
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "token_type": "bearer"
+}
+```
+
+---
+
+**`POST /auth/login`** — Se connecter
+
+Body JSON :
+```json
+{
+  "email": "user@example.com",
+  "password": "s3cret"
+}
+```
+
+Réponse `200` — `TokenResponse` :
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "token_type": "bearer"
+}
+```
+
+#### Preferences
+
+> Toutes les routes `/preferences` nécessitent le header `Authorization: Bearer <token>`.
+
+**`POST /preferences`** — Ajouter un genre en favori
+
+| Paramètre | Type | Requis |
+|-----------|------|--------|
+| `Authorization` | header (string) | oui |
+
+Body JSON :
+```json
+{
+  "genre_id": 3
+}
+```
+
+Réponse `201`.
+
+---
+
+**`DELETE /preferences/{genre_id}`** — Retirer un genre des favoris
+
+| Paramètre | Type | Requis |
+|-----------|------|--------|
+| `genre_id` | path (int) | oui |
+| `Authorization` | header (string) | oui |
+
+Réponse `200`.
+
+---
+
+**`GET /preferences/recommendations`** — Films recommandés selon les préférences
+
+| Paramètre | Type | Requis |
+|-----------|------|--------|
+| `Authorization` | header (string) | oui |
+
+Réponse `200` — liste de `FilmResponse` :
+```json
+[
+  { "ID": 1, "Nom": "Inception", "Note": 8.8, "Genre_ID": 3 }
+]
+```
 
 ### Notions abordées
-- Relations many-to-many en SQL
-- Requêtes avec jointures et agrégations (`COUNT`, `GROUP BY`)
-- Utilisation du module `sqlite3` : `cursor`, `fetchall`, `fetchone`
+- Authentification par token JWT
 - Hashage des mots de passe (`bcrypt`)
+- Utilisation du module `sqlite3` : `cursor`, `fetchall`, `fetchone`
+- Requêtes avec jointures
 
 ---
 
@@ -106,6 +239,23 @@ La documentation interactive est disponible sur `http://localhost:8000/docs`
 
 ### 🎤 Évaluation orale
 Chaque étudiant présente **son code** et des questions seront posées
+
+---
+
+## 📖 Référence des modèles
+
+| Modèle | Champs | Requis |
+|--------|--------|--------|
+| `FilmResponse` | `ID` (int), `Nom` (string), `Note` (float?), `DateSortie` (int?), `Image` (string?), `Video` (string?), `Genre_ID` (int?) | `ID`, `Nom` |
+| `GenreResponse` | `ID` (int), `Type` (string) | tous |
+| `PaginatedResponse` | `data` (array), `page` (int), `per_page` (int), `total` (int) | tous |
+| `TokenResponse` | `access_token` (string), `token_type` (string, défaut: `"bearer"`) | `access_token` |
+
+### Utilitaire
+
+**`GET /ping`** — Health check
+
+Réponse `200`.
 
 ## 📚 Ressources utiles
 
