@@ -4,8 +4,6 @@ from db import get_connection
 
 app = FastAPI()
 
-a = 5
-
 @app.get("/ping")
 def ping():
     return {"message": "pong"}
@@ -35,7 +33,7 @@ async def createFilm(film : Film):
 async def getFilms(page = 1, per_page = 20, genre_id = None):
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Film")
+        cursor.execute(f"SELECT * FROM Film ORDER BY {genre_id} LIMIT {per_page} OFFSET {(page-1)*per_page}")
         res = cursor.fetchall()  
         return res
 
