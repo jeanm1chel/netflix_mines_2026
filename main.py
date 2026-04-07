@@ -30,7 +30,37 @@ async def createFilm(film : Film):
         print(res)
         return res
 
+@app.get("/film")
+async def getFilms(page = 1, per_page = 20, genre_id = None):
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Film")
+        res = cursor.fetchall()  
+        return res
 
+@app.get("/genres")
+async def getGenres():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Genre")
+        res = cursor.fetchall()  
+        return res
+    
+@app.get("/film/{id}")
+async def getFilm(id: int):
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM Film WHERE Id = {id}")
+        res = cursor.fetchone()
+        return res
+
+@app.delete("/film/{id}")
+async def deleteFilm(id: int):
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM Film WHERE Id = {id}")
+        return {"message": f"Film {id} supprimé"}
+    
 if __name__ == "__main__":
     import uvicorn
 
