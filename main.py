@@ -63,16 +63,9 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
             cursor.execute(f"SELECT COUNT(*) FROM Film")
         else:
             cursor.execute(f"SELECT COUNT(*) FROM Film WHERE Genre_ID = {genre_id}")
-        res = {"data" : data, "page": page, "per_page":per_page, "total": cursor.fetchone()}
+        res = PaginatedResponse("data" : data, "page": page, "per_page":per_page, "total": cursor.fetchone())
         return res
 
-# @app.get("/film")
-# async def getFilms(page = 1, per_page = 20, genre_id = None):
-#     with get_connection() as conn:
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT * FROM Film")
-#         res = cursor.fetchall()  
-#         return res
 
 @app.get("/genres")
 async def getGenres():
