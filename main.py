@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from db import get_connection
 import jwt
 
+
 app = FastAPI()
 
 @app.get("/ping")
