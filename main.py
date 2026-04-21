@@ -1,9 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from db import get_connection
 import jwt
-
-a = 5
 
 app = FastAPI()
 
@@ -38,6 +36,9 @@ class User(BaseModel):
 class TokenResponse(BaseModel):
     access_token : str
     token_type : str | None = "bearer"
+
+class Preference(BaseModel):
+    genre_id : int 
 
 
 @app.post("/film")
@@ -103,18 +104,20 @@ async def deleteFilm(id: int):
 
 @app.post("/auth/register")
 async def createAccount(user: User):
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-        f"""
-            INSERT INTO Utilisateur (AdresseMail,Pseudo,MotDePasse)  
-            VALUES('{user.email}','{user.pseudo}','{user.password}') RETURNING *
-            """)
-        res = cursor.fetchone()
-        print(res)
-        token = jwt.encode({"code": user.email,}, SECRET_KEY, algorithm="HS256")
-
-    return TokenResponse(access_token=token, token_type="bearer")
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                INSERT INTO Utilisateur (AdresseMail, Pseudo, MotDePasse)
+                VALUES('{user.email}', '{user.pseudo}', '{user.password}') RETURNING *
+                """
+            )
+            res = cursor.fetchone()
+            token = jwt.encode({"sub": user.email}, SECRET_KEY, algorithm="HS256")
+            return TokenResponse(access_token=token, token_type="bearer")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
 
 
 @app.post("/auth/login")
@@ -133,13 +136,62 @@ async def login(user: User):
 
     return TokenResponse(access_token=token, token_type="bearer")
 
-@app.post("preferences")
-async def addPref():
-    return 
+@app.post("/preferences", status_code=201)
+async def addPref(preference : Preference, authorization : str = Header(...)):
+    # Vérification du token 
 
-@app.delete("preferences/{genre_id}")
-async def delPref(genre_id, Authorization):
-    return 
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("sub")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    # Récupération de l'utilisateur
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+
+     # Ajout de la préférence
+        cursor.execute(
+    f"INSERT INTO Genre_Utilisateur (ID_Genre, ID_User) VALUES ({preference.genre_id}, {user[0]}) RETURNING *"
+)
+    res = cursor.fetchone()
+    return res 
+
+
+
+@app.delete("/preferences/{genre_id}")
+async def deletePreference(genre_id: int, authorization: str = Header(...)):
+    # Vérification du token
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("sub")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token invalide")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Récupération de l'utilisateur
+        cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
+        user = cursor.fetchone()
+
+        if user is None:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+
+        # Suppression de la préférence
+        cursor.execute(
+            f"DELETE FROM Genre_Utilisateur WHERE ID_Genre = {genre_id} AND ID_User = {user[0]}"
+        )
+
+    return {"message": f"Genre {genre_id} retiré des favoris"}
+
     
 if __name__ == "__main__":
     import uvicorn
