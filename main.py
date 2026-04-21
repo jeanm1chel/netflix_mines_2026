@@ -121,7 +121,7 @@ async def createAccount(user: User):
         raise HTTPException(status_code=409, detail="Email déjà utilisé")
 
 
-@app.post("/auth/login", status_code=200)
+@app.post("/auth/login")
 async def login(user: User):
     with get_connection() as conn:
         cursor = conn.cursor()
