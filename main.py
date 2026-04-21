@@ -142,8 +142,6 @@ async def login(user: User):
 
 @app.post("/preferences", status_code=201)
 async def addPref(preference : Preference, authorization : str = Header(...)):
-    # Vérification du token 
-
     try:
         token = authorization.replace("Bearer ", "")
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -151,7 +149,6 @@ async def addPref(preference : Preference, authorization : str = Header(...)):
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    # Récupération de l'utilisateur
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
@@ -160,13 +157,12 @@ async def addPref(preference : Preference, authorization : str = Header(...)):
         if user is None:
             raise HTTPException(status_code=401, detail="Utilisateur introuvable")
 
-     # Ajout de la préférence
+        # Ajout de la préférence
         cursor.execute(
-    f"INSERT INTO Genre_Utilisateur (ID_Genre, ID_User) VALUES ({preference.genre_id}, {user[0]}) RETURNING *"
-)
-    res = cursor.fetchone()
-    return res 
-
+            f"INSERT INTO Genre_Utilisateur (ID_Genre, ID_User) VALUES ({preference.genre_id}, {user[0]}) RETURNING *"
+        )
+        res = cursor.fetchone()  # bien à l'intérieur du with
+    return res
 
 
 @app.delete("/preferences/{genre_id}")
@@ -193,7 +189,6 @@ async def deletePreference(genre_id: int, authorization: str = Header(...)):
         cursor.execute(
             f"DELETE FROM Genre_Utilisateur WHERE ID_Genre = {genre_id} AND ID_User = {user[0]}"
         )
-
     return {"message": f"Genre {genre_id} retiré des favoris"}
 
     
