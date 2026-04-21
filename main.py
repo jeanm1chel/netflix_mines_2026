@@ -53,7 +53,7 @@ async def createFilm(film : Film):
         print(res)
         return res
 
-@app.get("/film")
+@app.get("/films")
 async def getFilms(page = 1, per_page = 20, genre_id = None):
     per_page=int(per_page)
     page=int(page)
