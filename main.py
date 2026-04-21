@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from db import get_connection
-import jwt
+#import jwt
 
 app = FastAPI()
 
@@ -76,6 +76,7 @@ async def getFilms(page = 1, per_page = 20, genre_id = None):
         return res
 
 
+
 @app.get("/genres")
 async def getGenres():
     with get_connection() as conn:
@@ -137,6 +138,8 @@ async def login(user: User):
 
 @app.post("/preferences", status_code=201)
 async def addPref(preference : Preference, authorization : str = Header(...)):
+    # Vérification du token 
+
     try:
         token = authorization.replace("Bearer ", "")
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
