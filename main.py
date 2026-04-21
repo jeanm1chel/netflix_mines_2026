@@ -191,6 +191,24 @@ async def deletePreference(genre_id: int, authorization: str = Header(...)):
         )
     return {"message": f"Genre {genre_id} retiré des favoris"}
 
+@app.get("/preferences/recommendations")
+async def getprefreco(authorization : str = Header(...)):
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("sub")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=422, detail="Token invalide")
+    
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
+        user = cursor.fetchone()
+        cursor.execute(f"SELECT ID_Genre FROM Genre_Utilisateur WHERE ID_User = '{user[0]}'")
+        genre = cursor.fetchone() #prend en compte qu'un seul genre
+        cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = '{genre}' limit 5")
+        film = cursor.fetchall()
+        return film
     
 if __name__ == "__main__":
     import uvicorn
