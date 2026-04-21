@@ -99,7 +99,7 @@ async def deleteFilm(id: int):
         cursor.execute(f"DELETE FROM Film WHERE Id = {id}")
         return {"message": f"Film {id} supprimé"}
     
-# Authentification
+# Authentification  
 
 @app.post("/auth/register")
 async def createAccount(user: User):
