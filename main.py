@@ -214,10 +214,10 @@ async def getprefreco(authorization : str = Header(...)):
         cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
         user = cursor.fetchone()
         cursor.execute(f"SELECT ID_Genre FROM Genre_Utilisateur WHERE ID_User = '{user[0]}'")
-        genre = cursor.fetchone() #prend en compte qu'un seul genre
+        genre = cursor.fetchall() #prend en compte qu'un seul genre
         if genre == None:
             raise HTTPException(555, "erreur db genre")
-        cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = '{genre}' limit 5")
+        cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = '{genre[0]}' limit 5")
         film = cursor.fetchall()
         return film
     
