@@ -141,14 +141,14 @@ async def login(user: User):
     return TokenResponse(access_token=token, token_type="bearer")
 
 @app.post("/preferences", status_code=201)
-async def addPref(preference : Preference, authorization : str = Header(...)):
+async def addPref(preference: Preference, authorization: str = Header(...)):
     try:
         token = authorization.replace("Bearer ", "")
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         email = payload.get("sub")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token invalide")
-    
+
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
@@ -157,17 +157,22 @@ async def addPref(preference : Preference, authorization : str = Header(...)):
         if user is None:
             raise HTTPException(status_code=401, detail="Utilisateur introuvable")
 
-        # Ajout de la préférence
+        # Vérification doublon → 409
+        cursor.execute(
+            f"SELECT * FROM Genre_Utilisateur WHERE ID_Genre = {preference.genre_id} AND ID_User = {user[0]}"
+        )
+        if cursor.fetchone() is not None:
+            raise HTTPException(status_code=409, detail="Préférence déjà ajoutée")
+
         cursor.execute(
             f"INSERT INTO Genre_Utilisateur (ID_Genre, ID_User) VALUES ({preference.genre_id}, {user[0]}) RETURNING *"
         )
-        res = cursor.fetchone()  # bien à l'intérieur du with
+        res = cursor.fetchone()
     return res
 
 
 @app.delete("/preferences/{genre_id}")
 async def deletePreference(genre_id: int, authorization: str = Header(...)):
-    # Vérification du token
     try:
         token = authorization.replace("Bearer ", "")
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -177,15 +182,19 @@ async def deletePreference(genre_id: int, authorization: str = Header(...)):
 
     with get_connection() as conn:
         cursor = conn.cursor()
-        
-        # Récupération de l'utilisateur
         cursor.execute(f"SELECT * FROM Utilisateur WHERE AdresseMail = '{email}'")
         user = cursor.fetchone()
 
         if user is None:
             raise HTTPException(status_code=401, detail="Utilisateur introuvable")
 
-        # Suppression de la préférence
+        # Vérification existence → 404
+        cursor.execute(
+            f"SELECT * FROM Genre_Utilisateur WHERE ID_Genre = {genre_id} AND ID_User = {user[0]}"
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Préférence introuvable")
+
         cursor.execute(
             f"DELETE FROM Genre_Utilisateur WHERE ID_Genre = {genre_id} AND ID_User = {user[0]}"
         )
