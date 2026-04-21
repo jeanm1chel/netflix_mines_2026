@@ -118,7 +118,7 @@ async def createAccount(user: User):
             token = jwt.encode({"sub": user.email}, SECRET_KEY, algorithm="HS256")
             return TokenResponse(access_token=token, token_type="bearer")
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+        raise HTTPException(status_code=409, detail="Email déjà utilisé")
 
 
 @app.post("/auth/login")
