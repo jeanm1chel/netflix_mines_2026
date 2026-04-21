@@ -30,7 +30,7 @@ class PaginatedResponse(BaseModel):
 
 class User(BaseModel):
     email : str | None = None
-    pseudo : str 
+    pseudo: str | None = None  
     password : str 
     disabled : bool | None = None
 
