@@ -41,7 +41,7 @@ class Preference(BaseModel):
     genre_id : int 
 
 
-@app.post("/film")
+@app.post("/films")
 async def createFilm(film : Film):
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -53,7 +53,7 @@ async def createFilm(film : Film):
         print(res)
         return res
 
-@app.get("/film")
+@app.get("/films")
 async def getFilms(page = 1, per_page = 20, genre_id = None):
     per_page=int(per_page)
     page=int(page)
@@ -85,7 +85,7 @@ async def getGenres():
         res = cursor.fetchall()  
         return res
     
-@app.get("/film/{id}")
+@app.get("/films/{id}")
 async def getFilm(id: int):
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -93,7 +93,7 @@ async def getFilm(id: int):
         res = cursor.fetchone()
         return res
 
-@app.delete("/film/{id}")
+@app.delete("/films/{id}")
 async def deleteFilm(id: int):
     with get_connection() as conn:
         cursor = conn.cursor()
