@@ -41,7 +41,7 @@ class Preference(BaseModel):
     genre_id : int 
 
 
-@app.post("/films")
+@app.post("/film")
 async def createFilm(film : Film):
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -53,14 +53,14 @@ async def createFilm(film : Film):
         print(res)
         return res
 
-@app.get("/films")
+@app.get("/film")
 async def getFilms(page = 1, per_page = 20, genre_id = None):
     per_page=int(per_page)
     page=int(page)
     with get_connection() as conn:
         cursor = conn.cursor()
         if genre_id == None:
-            cursor.execute(f"SELECT * FROM Film ORDER BY DateSortie DESC LIMIT {per_page} OFFSET {(page-1)*per_page}")
+            cursor.execute(f"SELECT * FROM Film ORDER BY Genre_ID,DateSortie  LIMIT {per_page} OFFSET {(page-1)*per_page}")
         else:
             cursor.execute(f"SELECT * FROM Film WHERE Genre_ID = {genre_id} ORDER BY DateSortie LIMIT {per_page} OFFSET {(page-1)*per_page}")
         data = cursor.fetchall()
@@ -85,7 +85,7 @@ async def getGenres():
         res = cursor.fetchall()  
         return res
     
-@app.get("/films/{id}")
+@app.get("/film/{id}")
 async def getFilm(id: int):
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -93,7 +93,7 @@ async def getFilm(id: int):
         res = cursor.fetchone()
         return res
 
-@app.delete("/films/{id}")
+@app.delete("/film/{id}")
 async def deleteFilm(id: int):
     with get_connection() as conn:
         cursor = conn.cursor()
