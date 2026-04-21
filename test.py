@@ -1,14 +1,12 @@
 import requests
 
+BASE_URL = "http://localhost:8000"
 
-url = "http://localhost:8000/auth/login"
+response = requests.post(f"{BASE_URL}/auth/register", json={
+    "email": "nouveau@test.com",
+    "pseudo": "nouveauUser",
+    "password": "password123"
+})
 
-user = {
-    "email": "mauvais@test.com",
-    "pseudo": "michel",
-    "password": "mauvais_password"
-}
-
-response = requests.post(url, json=user)
 print(response.status_code)
 print(response.json())
