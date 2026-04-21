@@ -92,7 +92,10 @@ async def getFilm(id: int):
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM Film WHERE Id = {id}")
         res = cursor.fetchone()
-        return res
+        if res == None:
+            raise HTTPException(404, "film not found")
+        else:
+            return res
 
 @app.delete("/films/{id}")
 async def deleteFilm(id: int):
